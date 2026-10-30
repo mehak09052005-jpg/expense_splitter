@@ -1,0 +1,797 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Splitter</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background: linear-gradient(120deg, #ffdde1, #ee9ca7, #fbc2eb);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(90deg, #ff6ec4, #7873f5);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            width: 900px;
+            max-width: 95%;
+            margin: 40px 0;
+            background: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+        }
+
+        .bottom-section {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .result {
+            flex: 2;
+            padding: 15px;
+            background: #fbc2eb;
+            border-radius: 10px;
+            font-weight: bold;
+            color: #333;
+            min-height: 200px;
+            overflow-wrap: anywhere;
+        }
+
+        .history {
+            flex: 1;
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        .history-item {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        input, select {
+            padding: 10px;
+            margin: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background: #fdfdfd;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 8px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(90deg, #ff6ec4, #7873f5);
+            color: white;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: linear-gradient(90deg, #fbc2eb, #ee9ca7);
+        }
+
+        #tableWrapper {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        .search {
+            margin: 12px 0;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        .action-btn {
+            background: #ff6ec4;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            background: #e63946;
+        }
+
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+            background: #ddd;
+        }
+
+        .bar {
+            height: 100%;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #2575fc, #6a11cb);
+        }
+
+        #chart {
+            margin-top: 20px;
+            max-width: 100%;
+        }
+
+        /* Dark Mode */
+
+        .dark-mode {
+            background: linear-gradient(120deg, #141e30, #243b55);
+            color: #eee;
+        }
+
+        .dark-mode .container {
+            background: #222;
+            color: #eee;
+        }
+
+        .dark-mode header {
+            background: linear-gradient(90deg, #141e30, #243b55);
+        }
+
+        .dark-mode .result {
+            background: #333;
+            color: #eee;
+        }
+
+        .dark-mode .history {
+            background: #222;
+            color: #eee;
+        }
+
+        .dark-mode .history-item {
+            background: #444;
+            color: #eee;
+        }
+
+        .dark-mode table {
+            background: #333;
+            color: #eee;
+        }
+
+        .dark-mode th {
+            background: #444;
+            color: #eee;
+        }
+
+        .dark-mode td {
+            background: #333;
+            color: #eee;
+        }
+
+        .dark-mode input,
+        .dark-mode select {
+            background: #444;
+            color: white;
+            border-color: #666;
+        }
+
+        /* Responsive Design */
+
+        @media (max-width: 650px) {
+            .bottom-section {
+                flex-direction: column;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            header {
+                font-size: 22px;
+            }
+
+            input, select {
+                max-width: 90%;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>Expense Splitter</header>
+
+    <!-- Input Section -->
+
+    <input type="text" id="name" placeholder="Person Name">
+
+    <input type="number" id="amount"
+           placeholder="Amount Paid" min="0.01" step="0.01">
+
+    <select id="currency">
+        <option value="₹">₹</option>
+        <option value="$">$</option>
+        <option value="€">€</option>
+        <option value="£">£</option>
+    </select>
+
+    <button onclick="addPerson()">Add Person</button>
+
+    <button onclick="toggleDark()">🌙</button>
+
+    <button onclick="clearAll()">Clear All Data</button>
+
+    <!-- Search Section -->
+
+    <input class="search" id="search"
+           placeholder="Search person"
+           oninput="searchPerson()">
+
+    <!-- Expense Table -->
+
+    <div id="tableWrapper">
+
+        <table id="expenseTable">
+
+            <tr>
+                <th>S.No.</th>
+                <th>Name</th>
+                <th>Paid</th>
+                <th>Action</th>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <button onclick="calculateSplit()">Calculate Split</button>
+
+    <!-- Result and History Section -->
+
+    <div class="bottom-section">
+
+        <div id="result" class="result">
+            Your expense calculation will appear here.
+        </div>
+
+        <div class="history">
+
+            <h3>History</h3>
+
+            <button onclick="clearHistory()">Clear History</button>
+
+            <div id="history"></div>
+
+        </div>
+
+    </div>
+
+    <!-- Pie Chart -->
+
+    <canvas id="chart"></canvas>
+
+</div>
+
+
+<!-- Chart.js Library -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<script>
+
+// Load saved data from Local Storage
+
+let people = JSON.parse(localStorage.getItem("people")) || [];
+
+let history = JSON.parse(localStorage.getItem("history")) || [];
+
+let chartInstance = null;
+
+
+// Page Load Function
+
+window.onload = function() {
+
+    renderTable();
+
+    renderHistory();
+
+    clearChart();
+
+};
+
+
+// Save People Data
+
+function savePeople() {
+
+    localStorage.setItem("people", JSON.stringify(people));
+
+}
+
+
+// Save History Data
+
+function saveHistory() {
+
+    localStorage.setItem("history", JSON.stringify(history));
+
+}
+
+
+// Display Table
+
+function renderTable() {
+
+    let table = document.getElementById("expenseTable");
+
+    table.innerHTML = `
+        <tr>
+            <th>S.No.</th>
+            <th>Name</th>
+            <th>Paid</th>
+            <th>Action</th>
+        </tr>
+    `;
+
+    people.forEach((p, i) => {
+
+        let row = table.insertRow();
+
+        row.insertCell(0).innerText = i + 1;
+
+        row.insertCell(1).innerText = p.name;
+
+        row.insertCell(2).innerText =
+            document.getElementById("currency").value +
+            Number(p.amount).toFixed(2);
+
+        let actions = row.insertCell(3);
+
+        let btn = document.createElement("button");
+
+        btn.className = "action-btn";
+
+        btn.innerText = "Delete";
+
+        btn.onclick = function() {
+
+            deletePerson(i);
+
+        };
+
+        actions.appendChild(btn);
+
+    });
+
+    searchPerson();
+
+}
+
+
+// Add Person
+
+function addPerson() {
+
+    let n = document.getElementById("name").value.trim();
+
+    let a = parseFloat(document.getElementById("amount").value);
+
+    if (n === "" || isNaN(a) || a <= 0) {
+
+        alert("Please enter a valid name and amount!");
+
+        return;
+
+    }
+
+    people.push({
+
+        name: n,
+
+        amount: a
+
+    });
+
+    savePeople();
+
+    renderTable();
+
+    document.getElementById("name").value = "";
+
+    document.getElementById("amount").value = "";
+
+    document.getElementById("tableWrapper").scrollTop =
+        document.getElementById("tableWrapper").scrollHeight;
+
+}
+
+
+// Delete Person
+
+function deletePerson(i) {
+
+    people.splice(i, 1);
+
+    savePeople();
+
+    renderTable();
+
+    calculateSplit(false);
+
+}
+
+
+// Calculate Expense Split
+
+function calculateSplit(saveToHistory = true) {
+
+    let result = document.getElementById("result");
+
+    result.innerHTML = "";
+
+    if (people.length === 0) {
+
+        result.innerText = "No data available.";
+
+        clearChart();
+
+        return;
+
+    }
+
+    let total = people.reduce((sum, p) => {
+
+        return sum + Number(p.amount);
+
+    }, 0);
+
+    let share = total / people.length;
+
+    let currency = document.getElementById("currency").value;
+
+    let heading = document.createElement("div");
+
+    heading.innerText =
+        "Total: " + currency + total.toFixed(2) +
+        " | Each should pay: " +
+        currency + share.toFixed(2);
+
+    result.appendChild(heading);
+
+    result.appendChild(document.createElement("br"));
+
+    let historyEntry =
+        "Total: " + currency + total.toFixed(2) +
+        " | Each should pay: " +
+        currency + share.toFixed(2) + " | ";
+
+    people.forEach((p, i) => {
+
+        let balance = Number(p.amount) - share;
+
+        let line = document.createElement("div");
+
+        let message;
+
+        if (Math.abs(balance) < 0.005) {
+
+            message = "SETTLED";
+
+        }
+
+        else if (balance > 0) {
+
+            message = "GETS BACK: " +
+                currency + Math.abs(balance).toFixed(2);
+
+        }
+
+        else {
+
+            message = "GIVES: " +
+                currency + Math.abs(balance).toFixed(2);
+
+        }
+
+        line.innerText = (i + 1) + ". " +
+            p.name + " → " + message;
+
+        result.appendChild(line);
+
+        historyEntry += line.innerText + " | ";
+
+        // Progress Bar
+
+        let bar = document.createElement("div");
+
+        bar.className = "progress";
+
+        let inner = document.createElement("div");
+
+        inner.className = "bar";
+
+        inner.style.width = (p.amount / total * 100) + "%";
+
+        bar.appendChild(inner);
+
+        result.appendChild(bar);
+
+    });
+
+
+    // Save Calculation History
+
+    if (saveToHistory) {
+
+        history.push(historyEntry);
+
+        saveHistory();
+
+        renderHistory();
+
+    }
+
+    // Display Pie Chart
+
+    drawChart();
+
+}
+
+
+// Search Person
+
+function searchPerson() {
+
+    let q = document.getElementById("search")
+        .value.toLowerCase();
+
+    let table = document.getElementById("expenseTable");
+
+    for (let r = 1; r < table.rows.length; r++) {
+
+        let name = table.rows[r].cells[1]
+            .innerText.toLowerCase();
+
+        table.rows[r].style.display =
+            name.includes(q) ? "" : "none";
+
+    }
+
+}
+
+
+// Dark Mode
+
+function toggleDark() {
+
+    document.body.classList.toggle("dark-mode");
+
+}
+
+
+// Draw Pie Chart
+
+function drawChart() {
+
+    let ctx = document.getElementById("chart")
+        .getContext("2d");
+
+    if (chartInstance) {
+
+        chartInstance.destroy();
+
+    }
+
+    chartInstance = new Chart(ctx, {
+
+        type: "pie",
+
+        data: {
+
+            labels: people.map(p => p.name),
+
+            datasets: [{
+
+                label: "Amount Paid",
+
+                data: people.map(p => p.amount),
+
+                backgroundColor: [
+                    "#ff6ec4",
+                    "#7873f5",
+                    "#2575fc",
+                    "#fbc2eb",
+                    "#ee9ca7",
+                    "#6a11cb",
+                    "#00b894",
+                    "#fdcb6e"
+                ]
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            plugins: {
+
+                legend: {
+
+                    position: "bottom"
+
+                },
+
+                title: {
+
+                    display: true,
+
+                    text: "Expense Distribution"
+
+                }
+
+            }
+
+        }
+
+    });
+
+}
+
+
+// Clear Chart
+
+function clearChart() {
+
+    if (chartInstance) {
+
+        chartInstance.destroy();
+
+        chartInstance = null;
+
+    }
+
+}
+
+
+// Display History
+
+function renderHistory() {
+
+    let h = document.getElementById("history");
+
+    h.innerHTML = "";
+
+    history.slice().reverse().forEach((entry, index) => {
+
+        let div = document.createElement("div");
+
+        div.className = "history-item";
+
+        div.innerText =
+            (history.length - index) + ". " + entry;
+
+        h.appendChild(div);
+
+    });
+
+    // Show newest history at top
+
+    h.scrollTop = 0;
+
+}
+
+
+// Clear All Data
+
+function clearAll() {
+
+    let confirmClear = confirm(
+        "Are you sure you want to clear all expense data?"
+    );
+
+    if (!confirmClear) {
+
+        return;
+
+    }
+
+    people = [];
+
+    localStorage.removeItem("people");
+
+    renderTable();
+
+    clearChart();
+
+    document.getElementById("result").innerText =
+        "All data cleared!";
+
+    document.getElementById("name").value = "";
+
+    document.getElementById("amount").value = "";
+
+    document.getElementById("search").value = "";
+
+    // History will remain saved
+
+    renderHistory();
+
+}
+
+
+// Clear History
+
+function clearHistory() {
+
+    let confirmClear = confirm(
+        "Are you sure you want to clear history?"
+    );
+
+    if (!confirmClear) {
+
+        return;
+
+    }
+
+    history = [];
+
+    localStorage.removeItem("history");
+
+    renderHistory();
+
+}
+
+</script>
+
+</body>
+</html>
